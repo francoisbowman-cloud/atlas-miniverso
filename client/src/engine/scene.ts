@@ -32,6 +32,7 @@ export class AtlasEngine {
     this.engine.disableUniformBuffers = true
 
     this.scene = new Scene(this.engine)
+    ;(window as any).__atlasScene = this.scene // TEMP debug — quitar tras verificar
 
     // Fondo oscuro cálido — como el interior de la cafetería de noche
     this.scene.clearColor = new Color4(0.1, 0.08, 0.06, 1)

@@ -37,6 +37,7 @@ export class GLBAvatar {
 
   public animations: AnimationGroup[] = []
   public loaded = false
+  private characterLight: PointLight | null = null
 
   // ─── ANIMACION PROCEDURAL ────────────────────────────────────────────────
   private _animMode:     'idle' | 'walk' | 'none' = 'none'
@@ -267,11 +268,15 @@ export class GLBAvatar {
   // ─── LUZ DE PERSONAJE ────────────────────────────────────────────────────
 
   addCharacterLight() {
+    // Se guarda la referencia para poder liberarla en dispose(). Antes se
+    // perdía (nadie la almacenaba) y cada cambio de avatar dejaba una luz
+    // nueva sin quitar la anterior — acumulación silenciosa en cada swap.
     const light = new PointLight('avatarLight', new Vector3(0, 2.2, -1.2), this.scene)
     light.diffuse   = new Color3(1.0, 0.97, 0.94)
     light.intensity = 1.4
     light.range     = 6
     light.parent    = this.root
+    this.characterLight = light
     return light
   }
 
@@ -356,5 +361,26 @@ export class GLBAvatar {
       this.scene.onBeforeRenderObservable.remove(this._animObserver)
       this._animObserver = null
     }
+    this.animations.forEach(ag => ag.stop())
+    this.animations = []
+
+    // Antes esto era un no-op: solo se quitaba el observer, pero las mallas,
+    // materiales, texturas y el nodo `corrective` (con el GLB entero colgando
+    // de él) seguían en la escena para siempre. Cada cambio de avatar dejaba
+    // el modelo anterior flotando debajo/detrás del nuevo — eso es lo que se
+    // veía como "avatares mezclados".
+    if (this.corrective) {
+      this.corrective.dispose(false, true)  // recursivo + libera materiales y texturas
+      this.corrective = null
+    }
+
+    this.characterLight?.dispose()
+    this.characterLight = null
+
+    this.skinMeshes = []
+    this.hairMeshes = []
+    this.jacketMeshes = []
+    this.pantsMeshes = []
+    this.loaded = false
   }
 }

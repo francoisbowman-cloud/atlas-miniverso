@@ -30,6 +30,10 @@ const REALISTIC_AVATARS: RealisticAvatar[] = [
 const REALISTIC_DIR = '/models/realistic/'
 const DOLL_URL      = '/models/avatar_doll.glb'   // avatar estilizado personalizable por color
 
+// "Crear con mi foto" (Avaturn) deprioritado por ahora — el código sigue
+// intacto, solo no se muestra el botón. Cambiar a true para reactivarlo.
+const ENABLE_AVATURN = false
+
 // ─── PALETAS ──────────────────────────────────────────────────────────────────
 
 const SKIN_TONES = [
@@ -323,13 +327,15 @@ export class AvatarCustomizer {
     })
     wrap.appendChild(grid)
 
-    // Botón: crear con selfie (Avaturn)
-    const photoBtn = document.createElement('button')
-    photoBtn.className = 'appear-photo'
-    photoBtn.dataset.group = 'appearance'
-    photoBtn.innerHTML = '📷 Crear con mi foto'
-    photoBtn.addEventListener('click', () => this.openAvaturn(photoBtn))
-    wrap.appendChild(photoBtn)
+    // Botón: crear con selfie (Avaturn) — deprioritado, ver ENABLE_AVATURN
+    if (ENABLE_AVATURN) {
+      const photoBtn = document.createElement('button')
+      photoBtn.className = 'appear-photo'
+      photoBtn.dataset.group = 'appearance'
+      photoBtn.innerHTML = '📷 Crear con mi foto'
+      photoBtn.addEventListener('click', () => this.openAvaturn(photoBtn))
+      wrap.appendChild(photoBtn)
+    }
 
     // Botón: avatar estilizado personalizable por color
     const dollBtn = document.createElement('button')
