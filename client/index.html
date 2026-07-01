@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Atlas</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html, body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #1a1410;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+
+      #atlas-canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        touch-action: none;
+      }
+
+      #ui-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+
+      #ui-overlay * {
+        pointer-events: auto;
+      }
+
+      #loading-screen {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #1a1410;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #f5f0e8;
+        gap: 16px;
+        z-index: 100;
+      }
+
+      #loading-screen h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        color: #C8956C;
+      }
+
+      #loading-screen p {
+        font-size: 0.9rem;
+        color: #A09080;
+      }
+
+      .loading-bar {
+        width: 200px;
+        height: 2px;
+        background: #2a2420;
+        border-radius: 1px;
+        overflow: hidden;
+      }
+
+      .loading-bar-fill {
+        height: 100%;
+        background: #C8956C;
+        border-radius: 1px;
+        animation: loading 1.5s ease-in-out infinite;
+      }
+
+      @keyframes loading {
+        0% { width: 0%; }
+        50% { width: 70%; }
+        100% { width: 100%; }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="atlas-canvas"></canvas>
+
+    <div id="ui-overlay"></div>
+
+    <div id="loading-screen">
+      <h1>ATLAS</h1>
+      <div class="loading-bar">
+        <div class="loading-bar-fill"></div>
+      </div>
+      <p>Preparando la cafetería...</p>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

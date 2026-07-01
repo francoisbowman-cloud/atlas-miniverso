@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "atlas-avatar": {
+      "command": "python",
+      "args": ["mcp_avatar_server.py"],
+      "cwd": "C:\\Users\\user\\Claude\\Projects\\Chatroom Miniverso"
+    }
+  }
+}
