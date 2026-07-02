@@ -281,10 +281,10 @@ export class AvatarCustomizer {
     `
     panel.appendChild(header)
 
-    // Cuerpo scrollable
+    // Cuerpo scrollable — min-height:0 es crítico en flex para que overflow-y funcione en iOS
     const body = document.createElement('div')
     body.style.cssText = `
-      flex: 1; overflow-y: auto; padding: 18px 22px;
+      flex: 1; min-height: 0; overflow-y: auto; padding: 18px 22px;
       display: flex; flex-direction: column; gap: 20px;
     `
     body.appendChild(this.appearanceSection())
@@ -447,7 +447,7 @@ export class AvatarCustomizer {
   private enterButton(): HTMLButtonElement {
     const btn = document.createElement('button')
     btn.id          = 'btn-enter'
-    btn.textContent = 'Entrar a la cafeteria'
+    btn.textContent = 'Entrar a la cafetería ☕'
     btn.className   = 'enter-btn'
     return btn
   }
@@ -541,9 +541,10 @@ export class AvatarCustomizer {
         padding: 14px 22px max(22px, calc(14px + env(safe-area-inset-bottom, 0px)));
       }
 
-      /* Móvil: panel ocupa todo el ancho */
+      /* Móvil: panel ocupa todo el ancho, botón más alto para Safari iOS */
       @media (max-width: 500px) {
         #customizer-panel { width: 100% !important; border-left: none !important; }
+        #customizer-footer { padding-bottom: 80px !important; }
       }
     `
     document.head.appendChild(style)
