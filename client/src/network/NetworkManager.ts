@@ -48,9 +48,15 @@ export class NetworkManager {
   // Callback de lista de jugadores: (players[])
   onPlayersUpdate: ((players: { id: string; name: string }[]) => void) | null = null
 
+  // Notificaciones de sala
+  onPlayerJoin:  ((name: string) => void) | null = null
+  onPlayerLeave: ((name: string) => void) | null = null
+
   // Mapa de nombre por id (jugadores remotos)
-  private playerNames = new Map<string, string>()
-  private myName      = ''
+  private playerNames  = new Map<string, string>()
+  private myName       = ''
+  // IDs de jugadores que llegaron DESPUÉS del welcome (recién llegados)
+  private newArrivals  = new Set<string>()
 
   // Identidad pendiente (puede enviarse antes de que abra el WS)
   private pendingIdentity: object | null = null
@@ -122,7 +128,10 @@ export class NetworkManager {
         break
 
       case 'player_join':
-        if (msg.id !== this.myId) this.spawnRemote(msg as PlayerData)
+        if (msg.id !== this.myId) {
+          this.newArrivals.add(msg.id)   // marcar como recién llegado
+          this.spawnRemote(msg as PlayerData)
+        }
         break
 
       case 'player_move':
@@ -132,20 +141,27 @@ export class NetworkManager {
       case 'player_identity': {
         const rp = this.remotePlayers.get(msg.id)
         if (rp) rp.applyIdentity(msg.name, msg.skin, msg.hair, msg.jacket, msg.pants)
-        if (this.playerNames.has(msg.id)) {
-          this.playerNames.set(msg.id, msg.name)
-          this.notifyPlayerList()
+        this.playerNames.set(msg.id, msg.name)
+        this.notifyPlayerList()
+        // Si es un recién llegado, disparar notificación de entrada
+        if (this.newArrivals.has(msg.id)) {
+          this.newArrivals.delete(msg.id)
+          this.onPlayerJoin?.(msg.name)
         }
         break
       }
 
-      case 'player_leave':
+      case 'player_leave': {
+        const leavingName = this.playerNames.get(msg.id)
         this.remotePlayers.get(msg.id)?.dispose()
         this.remotePlayers.delete(msg.id)
         this.playerNames.delete(msg.id)
+        this.newArrivals.delete(msg.id)
         this.notifyPlayerList()
+        if (leavingName) this.onPlayerLeave?.(leavingName)
         console.log(`[Atlas WS] Jugador salió: ${(msg.id as string).slice(0, 8)}`)
         break
+      }
 
       case 'chat': {
         const isSelf = msg.id === this.myId

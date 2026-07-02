@@ -123,6 +123,8 @@ async function boot() {
       net.onPlayersUpdate = (players) => {
         userList.setPlayers(players)
       }
+      net.onPlayerJoin  = (name) => chat.addSystemMessage(`${name} entró a la cafetería ☕`)
+      net.onPlayerLeave = (name) => chat.addSystemMessage(`${name} salió de la sala`)
 
       // 7. Radio — emisora sincronizada de sala
       const radio = new RadioPlayer()
