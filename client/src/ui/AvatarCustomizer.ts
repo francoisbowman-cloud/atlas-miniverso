@@ -258,8 +258,8 @@ export class AvatarCustomizer {
     panel.id = 'customizer-panel'
     panel.style.cssText = `
       position: fixed;
-      top: 0; right: 0;
-      width: 320px; height: 100vh; height: 100dvh;
+      top: 0; right: 0; bottom: 0;
+      width: 320px;
       background: rgba(8, 6, 4, 0.94);
       border-left: 1px solid #221810;
       display: none;
@@ -300,7 +300,8 @@ export class AvatarCustomizer {
 
     // Footer
     const footer = document.createElement('div')
-    footer.style.cssText = 'padding: 14px 22px 22px; border-top: 1px solid #1A1208;'
+    footer.id = 'customizer-footer'
+    footer.style.cssText = 'border-top: 1px solid #1A1208;'
     footer.appendChild(this.enterButton())
     panel.appendChild(footer)
 
@@ -534,6 +535,11 @@ export class AvatarCustomizer {
       #customizer-panel ::-webkit-scrollbar       { width: 4px; }
       #customizer-panel ::-webkit-scrollbar-track  { background: transparent; }
       #customizer-panel ::-webkit-scrollbar-thumb  { background: #2E1E0E; border-radius: 2px; }
+
+      /* Footer: safe area para iPhone (barra inferior de Safari) */
+      #customizer-footer {
+        padding: 14px 22px max(22px, calc(14px + env(safe-area-inset-bottom, 0px)));
+      }
 
       /* Móvil: panel ocupa todo el ancho */
       @media (max-width: 500px) {
