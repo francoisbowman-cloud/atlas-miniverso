@@ -258,7 +258,7 @@ export class AvatarCustomizer {
     panel.id = 'customizer-panel'
     panel.style.cssText = `
       position: fixed;
-      top: 0; right: 0; bottom: 0;
+      top: 0; right: 0;
       width: 320px;
       background: rgba(8, 6, 4, 0.94);
       border-left: 1px solid #221810;
@@ -536,15 +536,21 @@ export class AvatarCustomizer {
       #customizer-panel ::-webkit-scrollbar-track  { background: transparent; }
       #customizer-panel ::-webkit-scrollbar-thumb  { background: #2E1E0E; border-radius: 2px; }
 
-      /* Footer: safe area para iPhone (barra inferior de Safari) */
+      /* Altura del panel: cascada de fallbacks para iOS Safari */
+      #customizer-panel {
+        height: 100vh;
+        height: -webkit-fill-available;
+        height: 100dvh;
+      }
+
+      /* Footer: safe area para iPhone (home indicator) */
       #customizer-footer {
         padding: 14px 22px max(22px, calc(14px + env(safe-area-inset-bottom, 0px)));
       }
 
-      /* Móvil: panel ocupa todo el ancho, botón más alto para Safari iOS */
+      /* Móvil: panel ocupa todo el ancho */
       @media (max-width: 500px) {
         #customizer-panel { width: 100% !important; border-left: none !important; }
-        #customizer-footer { padding-bottom: 80px !important; }
       }
     `
     document.head.appendChild(style)
