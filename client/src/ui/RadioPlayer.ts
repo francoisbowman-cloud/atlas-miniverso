@@ -92,9 +92,10 @@ export class RadioPlayer {
 
   constructor() {
     this.audio = new Audio()
-    this.audio.volume      = this._volume
-    this.audio.preload     = 'none'
-    this.audio.crossOrigin = 'anonymous'
+    this.audio.volume  = this._volume
+    this.audio.preload = 'none'
+    // crossOrigin omitido: muchas emisoras no envían cabeceras CORS
+    // y bloqueaban la reproducción silenciosamente.
 
     this.injectStyles()
     this.buildPanel()
@@ -439,9 +440,15 @@ export class RadioPlayer {
       this.audio.play().then(() => {
         this.elPlayBtn.textContent = '⏸'
         this.elDot.classList.add('pulsing')
-      }).catch(() => {
+      }).catch((err) => {
         this._playing = false
-        console.warn('[Atlas Radio] Reproducción bloqueada. Haz clic en ▶ para intentar de nuevo.')
+        this.elPlayBtn.textContent = '▶'
+        this.elDot.classList.remove('pulsing')
+        console.warn('[Atlas Radio] No se pudo reproducir:', err)
+        // Si falla una emisora dominicana, mostrar sugerencia en el nombre
+        if (this.cat === 'rd') {
+          this.elCurrentGenre.textContent = '⚠ Stream no disponible — prueba Custom ↗'
+        }
       })
     }
   }
@@ -526,8 +533,15 @@ export class RadioPlayer {
     s.textContent = `
       #radio-panel {
         --accent: #C8956C;
-        position: fixed; right: 16px; bottom: 16px;
-        width: 252px;
+        position: fixed;
+        right: 16px;
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        width: min(252px, calc(100vw - 32px));
+      }
+      @media (max-width: 500px) {
+        #radio-panel { bottom: 70px; }
+      }
+      #radio-panel {
         background: rgba(8, 6, 4, 0.92);
         border: 1px solid rgba(60, 36, 12, 0.55);
         border-radius: 12px;
@@ -552,7 +566,10 @@ export class RadioPlayer {
       #radio-lbl { font-size: 9px; font-weight: bold; letter-spacing:.18em; color:#6A4828; flex:1; }
       #radio-sync, #radio-collapse {
         background:none; border:none; font-size:13px; cursor:pointer;
-        padding:2px 4px; border-radius:4px; opacity:.55; transition:opacity .15s; line-height:1;
+        padding:6px 8px; border-radius:4px; opacity:.55; transition:opacity .15s; line-height:1;
+        touch-action: manipulation;
+        min-width: 36px; min-height: 36px;
+        display: flex; align-items: center; justify-content: center;
       }
       #radio-sync:hover, #radio-collapse:hover { opacity:1; }
       #radio-panel.synced #radio-sync { opacity:1; color:var(--accent); }

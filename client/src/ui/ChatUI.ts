@@ -168,17 +168,23 @@ export class ChatUI {
     s.textContent = `
       #chat-panel {
         position: fixed;
-        left: 16px; bottom: 16px;
-        width: 300px;
+        left: 16px;
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        width: min(300px, calc(100vw - 32px));
         display: flex; flex-direction: column;
         z-index: 100;
         font-family: Arial, sans-serif;
+        /* Subir en móvil para evitar zona de gestos de Chrome Android */
+        margin-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      @media (max-width: 500px) {
+        #chat-panel { bottom: 70px; }
       }
 
       /* ── Header ── */
       #chat-header {
         display: flex; align-items: center; gap: 7px;
-        padding: 7px 12px;
+        padding: 10px 12px;
         background: rgba(10, 8, 6, 0.88);
         border: 1px solid rgba(60, 36, 12, 0.55);
         border-radius: 10px 10px 0 0;
@@ -187,6 +193,8 @@ export class ChatUI {
         pointer-events: all;
         backdrop-filter: blur(4px);
         transition: background .15s;
+        touch-action: manipulation;
+        min-height: 44px;
       }
       #chat-header:hover { background: rgba(20, 14, 8, 0.92); }
 
@@ -220,7 +228,7 @@ export class ChatUI {
 
       /* ── Lista de mensajes ── */
       #chat-list {
-        max-height: 200px; overflow-y: auto;
+        max-height: min(200px, 30vh); overflow-y: auto;
         display: flex; flex-direction: column;
         gap: 6px; padding: 10px 10px 6px;
         scrollbar-width: thin;
@@ -280,11 +288,12 @@ export class ChatUI {
       #chat-input::placeholder { color: #3A2010; }
 
       #chat-send {
-        width: 32px; height: 32px; flex-shrink: 0;
+        width: 40px; height: 40px; flex-shrink: 0;
         background: #C8956C; color: #0A0806;
         border: none; border-radius: 7px;
         font-size: 15px; font-weight: bold;
         cursor: pointer; transition: opacity .15s;
+        touch-action: manipulation;
       }
       #chat-send:hover { opacity: .82; }
     `

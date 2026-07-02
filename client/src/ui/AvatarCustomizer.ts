@@ -259,7 +259,7 @@ export class AvatarCustomizer {
     panel.style.cssText = `
       position: fixed;
       top: 0; right: 0;
-      width: 320px; height: 100vh;
+      width: 320px; height: 100vh; height: 100dvh;
       background: rgba(8, 6, 4, 0.94);
       border-left: 1px solid #221810;
       display: none;
@@ -534,6 +534,11 @@ export class AvatarCustomizer {
       #customizer-panel ::-webkit-scrollbar       { width: 4px; }
       #customizer-panel ::-webkit-scrollbar-track  { background: transparent; }
       #customizer-panel ::-webkit-scrollbar-thumb  { background: #2E1E0E; border-radius: 2px; }
+
+      /* Móvil: panel ocupa todo el ancho */
+      @media (max-width: 500px) {
+        #customizer-panel { width: 100% !important; border-left: none !important; }
+      }
     `
     document.head.appendChild(style)
   }
