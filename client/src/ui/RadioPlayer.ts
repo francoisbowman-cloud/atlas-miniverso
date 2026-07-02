@@ -2,7 +2,7 @@
  * RadioPlayer — emisora de ambiente para la cafetería Atlas.
  *
  * Características:
- * • 3 categorías: SomaFM (12 estaciones) | 🇩🇴 RD (5 emisoras) | ★ Custom
+ * • 2 categorías: SomaFM (12 estaciones) | ★ Custom
  * • Sincronización de sala: cualquiera puede cambiar la estación y todos
  *   los que tienen sync ON la escuchan juntos (interruptor opcional)
  * • URL personalizada: pega cualquier stream MP3/AAC o enlace de YouTube
@@ -34,20 +34,10 @@ const SOMA_STATIONS: Station[] = [
   { name: 'DEF CON Radio',      genre: 'Electronic • Techno', url: 'https://ice1.somafm.com/defcon-128-mp3',       color: '#D45B5B' },
 ]
 
-// Emisoras dominicanas — cargadas como iframe de Zeno.FM (no requieren CORS)
-// UUID obtenido de la og:image de cada página en zeno.fm/radio/{slug}/
-const RD_STATIONS: Station[] = [
-  { name: 'Tropical 100 Mix',      genre: 'Merengue • Bachata', url: 'https://player.zeno.fm/0/station/3159b3e6-78a8-4d0e-b13a-0f61c7529b18', color: '#E8412E' },
-  { name: 'Tropical 100 Merengue', genre: 'Merengue',           url: 'https://player.zeno.fm/0/station/b61c1c77-a254-4be6-8bf2-d0eb69097b4e', color: '#FF6B35' },
-  { name: 'Tropical 100 Salsa',    genre: 'Salsa',              url: 'https://player.zeno.fm/0/station/26a6380c-1c6b-4c9d-946b-bd033b1f7133', color: '#FFB347' },
-  { name: 'Bachata Hit Radio',     genre: 'Bachata',            url: 'https://player.zeno.fm/0/station/737e66c4-24cc-4d5e-9139-6ca4589eca88', color: '#E87B9A' },
-  { name: 'Caliente 104',          genre: 'Variada • Tropical', url: 'https://player.zeno.fm/0/station/4ad639bb-b5ec-4d02-978a-82c364e3dd1a', color: '#F5C518' },
-]
-
-type Category = 'somafm' | 'rd' | 'custom'
+type Category = 'somafm' | 'custom'
 
 function stationsFor(cat: Category): Station[] {
-  return cat === 'somafm' ? SOMA_STATIONS : cat === 'rd' ? RD_STATIONS : []
+  return cat === 'somafm' ? SOMA_STATIONS : []
 }
 
 // ─── CLASE ────────────────────────────────────────────────────────────────────
@@ -109,7 +99,7 @@ export class RadioPlayer {
    */
   applyRemoteState(category: string, idx: number, customUrl?: string, customLabel?: string) {
     if (!this._syncOn) return
-    this.cat = category as Category
+    this.cat = (category === 'somafm' || category === 'custom') ? category as Category : 'somafm'
     this.idx = idx
     if (customUrl   !== undefined) this.customUrl   = customUrl
     if (customLabel !== undefined) this.customLabel = customLabel
@@ -188,18 +178,17 @@ export class RadioPlayer {
       tabs.appendChild(btn)
     }
     makeCatBtn('somafm', 'SomaFM')
-    makeCatBtn('rd',     '🇩🇴 RD')
     makeCatBtn('custom', '★ Custom')
     body.appendChild(tabs)
 
     // ── Listas por categoría ──
-    ;(['somafm', 'rd', 'custom'] as Category[]).forEach(cat => {
+    ;(['somafm', 'custom'] as Category[]).forEach(cat => {
       const wrap = document.createElement('div')
       wrap.className = 'radio-list-wrap'
       wrap.style.display = 'none'
       this.listWraps[cat] = wrap
 
-      if (cat === 'somafm' || cat === 'rd') {
+      if (cat === 'somafm') {
         stationsFor(cat).forEach((st, i) => {
           const row = document.createElement('button')
           row.className = 'radio-st-row'
@@ -407,7 +396,7 @@ export class RadioPlayer {
   }
 
   private refreshListHighlight() {
-    ;(['somafm', 'rd'] as Category[]).forEach(cat => {
+    ;(['somafm'] as Category[]).forEach(cat => {
       const wrap = this.listWraps[cat]
       if (!wrap) return
       wrap.querySelectorAll<HTMLButtonElement>('.radio-st-row').forEach(row => {

@@ -64,6 +64,14 @@ export class GLBAvatar {
             const rootMesh = meshes[0]
             let needsRotation = false
 
+            // Babylon reproduce automaticamente la primera animacion embebida
+            // al importar (GLTFLoaderAnimationStartMode.FIRST por defecto).
+            // Si no se detiene aqui, el calculo de groundY que sigue mide la
+            // figura en un fotograma aleatorio a mitad de zancada en vez de
+            // la pose de reposo, y el avatar queda flotando o hundido.
+            // goToFrame(from) fija un fotograma conocido y determinista.
+            animGroups.forEach(ag => { ag.stop(); ag.goToFrame(ag.from) })
+
             if (rootMesh) {
               this.corrective = new TransformNode('glbCorrect', this.scene)
               this.corrective.parent   = this.root
@@ -283,7 +291,11 @@ export class GLBAvatar {
   // ─── ANIMACIONES ─────────────────────────────────────────────────────────
 
   playIdle() {
-    this.animations.forEach(ag => ag.stop())
+    // stop() por si sola deja el esqueleto en el ultimo fotograma reproducido
+    // (no lo resetea). goToFrame(from) fuerza una pose de reposo consistente
+    // cada vez que se entra a idle, en vez de un fotograma aleatorio a medio
+    // paso de la ultima vez que se camino.
+    this.animations.forEach(ag => { ag.stop(); ag.goToFrame(ag.from) })
 
     // Sin fallback a animations[0] — evita usar la animacion de caminar en idle
     const keywords = ['idle', 'stand', 'breathing', 'survey', 'default']

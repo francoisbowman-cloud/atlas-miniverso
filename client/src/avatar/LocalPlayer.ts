@@ -66,6 +66,10 @@ export class LocalPlayer {
   private savedBeta   = Math.PI / 3
   private savedRadius = 8
 
+  // Joystick virtual (móvil)
+  private joyX = 0
+  private joyY = 0
+
   private onKeyDown: (e: KeyboardEvent) => void
   private onKeyUp:   (e: KeyboardEvent) => void
 
@@ -178,6 +182,12 @@ export class LocalPlayer {
   updateNameplate(name: string) {
     this.username = name || 'Tú'
     this.drawNameplate(this.username)
+  }
+
+  /** Recibe dirección del joystick virtual (x,y ∈ [-1,1]). y<0=adelante, y>0=atrás */
+  setJoystickDir(x: number, y: number) {
+    this.joyX = x
+    this.joyY = y
   }
 
   /** Activa la vista de personalización: cámara frontal, sin control de ratón */
@@ -543,6 +553,13 @@ export class LocalPlayer {
     if (this.keys['KeyS'] || this.keys['ArrowDown'])  dir.subtractInPlace(forward)
     if (this.keys['KeyA'] || this.keys['ArrowLeft'])  dir.subtractInPlace(right)
     if (this.keys['KeyD'] || this.keys['ArrowRight']) dir.addInPlace(right)
+
+    // Joystick virtual (móvil): y<0 = adelante, y>0 = atrás
+    const JOY_DEAD = 0.15
+    if (this.joyY < -JOY_DEAD) dir.addInPlace(forward)
+    else if (this.joyY > JOY_DEAD) dir.subtractInPlace(forward)
+    if (this.joyX > JOY_DEAD)  dir.addInPlace(right)
+    else if (this.joyX < -JOY_DEAD) dir.subtractInPlace(right)
 
     const isMoving = dir.length() > 0
 

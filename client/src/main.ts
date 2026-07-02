@@ -8,6 +8,8 @@ import { AvatarCustomizer } from './ui/AvatarCustomizer'
 import { NetworkManager }   from './network/NetworkManager'
 import { ChatUI }           from './ui/ChatUI'
 import { RadioPlayer }      from './ui/RadioPlayer'
+import { Joystick }         from './ui/Joystick'
+import { UserList }         from './ui/UserList'
 
 // ─── ELEMENTOS ────────────────────────────────────────────────────────────────
 const canvas        = document.getElementById('atlas-canvas')   as HTMLCanvasElement
@@ -97,7 +99,7 @@ async function boot() {
       chat.onWhisper = (target, text) => net.sendWhisper(target, text)
 
       net.onChat = (_, name, text, isSelf) => {
-        chat.addMessage(isSelf ? 'Tú' : name, text, isSelf)
+        chat.addMessage(name, text, isSelf)
       }
       net.onWhisper = (fromName, toName, text, isSelf) => {
         chat.addWhisperMessage(fromName, toName, text, isSelf)
@@ -110,6 +112,17 @@ async function boot() {
       window.addEventListener('keydown', (e) => {
         if (chat.hasFocus) e.stopImmediatePropagation()
       }, true)
+
+      // 6b. Joystick (móvil)
+      const joystick = new Joystick()
+      joystick.onChange = (x, y) => player.setJoystickDir(x, y)
+
+      // 6c. Lista de presentes
+      const userList = new UserList()
+      userList.setMyName(selection.name)
+      net.onPlayersUpdate = (players) => {
+        userList.setPlayers(players)
+      }
 
       // 7. Radio — emisora sincronizada de sala
       const radio = new RadioPlayer()

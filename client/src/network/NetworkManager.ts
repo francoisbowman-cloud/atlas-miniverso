@@ -45,6 +45,13 @@ export class NetworkManager {
   // Callback de radio: (category, idx, customUrl?, customLabel?)
   onRadioChange: ((category: string, idx: number, customUrl?: string, customLabel?: string) => void) | null = null
 
+  // Callback de lista de jugadores: (players[])
+  onPlayersUpdate: ((players: { id: string; name: string }[]) => void) | null = null
+
+  // Mapa de nombre por id (jugadores remotos)
+  private playerNames = new Map<string, string>()
+  private myName      = ''
+
   // Identidad pendiente (puede enviarse antes de que abra el WS)
   private pendingIdentity: object | null = null
 
@@ -102,6 +109,7 @@ export class NetworkManager {
         this.myId = msg.id
         console.log(`[Atlas WS] ID local: ${this.myId.slice(0, 8)}`)
         ;(msg.players as PlayerData[]).forEach(p => this.spawnRemote(p))
+        this.notifyPlayerList()
         // Aplicar estado de radio de la sala
         if (msg.radioState) {
           this.onRadioChange?.(
@@ -124,12 +132,18 @@ export class NetworkManager {
       case 'player_identity': {
         const rp = this.remotePlayers.get(msg.id)
         if (rp) rp.applyIdentity(msg.name, msg.skin, msg.hair, msg.jacket, msg.pants)
+        if (this.playerNames.has(msg.id)) {
+          this.playerNames.set(msg.id, msg.name)
+          this.notifyPlayerList()
+        }
         break
       }
 
       case 'player_leave':
         this.remotePlayers.get(msg.id)?.dispose()
         this.remotePlayers.delete(msg.id)
+        this.playerNames.delete(msg.id)
+        this.notifyPlayerList()
         console.log(`[Atlas WS] Jugador salió: ${(msg.id as string).slice(0, 8)}`)
         break
 
@@ -167,12 +181,20 @@ export class NetworkManager {
     rp.moveTo(data.x, data.y, data.z, data.ry)
     rp.applyIdentity(data.name, data.skin, data.hair, data.jacket, data.pants)
     this.remotePlayers.set(data.id, rp)
+    this.playerNames.set(data.id, data.name)
+    this.notifyPlayerList()
     console.log(`[Atlas WS] Jugador en sala: ${data.id.slice(0, 8)} (${data.name})`)
+  }
+
+  private notifyPlayerList() {
+    const list = [...this.playerNames.entries()].map(([id, name]) => ({ id, name }))
+    this.onPlayersUpdate?.(list)
   }
 
   // ─── MENSAJES SALIENTES ───────────────────────────────────────────────────
 
   sendIdentity(name: string, skin: RGB, hair: RGB, jacket: RGB, pants: RGB) {
+    this.myName = name
     const data = { type: 'identity', name, skin, hair, jacket, pants }
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.send(data)
@@ -180,6 +202,8 @@ export class NetworkManager {
       this.pendingIdentity = data
     }
   }
+
+  getMyName(): string { return this.myName }
 
   sendChat(text: string) {
     this.send({ type: 'chat', text })
