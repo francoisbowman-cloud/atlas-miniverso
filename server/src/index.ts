@@ -188,6 +188,30 @@ wss.on('connection', (ws) => {
         }
       }
 
+      // ── Susurro (mensaje privado) ──
+      if (msg.type === 'whisper') {
+        const targetName = String(msg.targetName ?? '').trim().slice(0, 50)
+        const text       = String(msg.text ?? '').trim().slice(0, 200)
+        if (!targetName || !text) return
+
+        // Buscar jugador por nombre (sin distinción de mayúsculas)
+        let target: PlayerState | undefined
+        for (const p of players.values()) {
+          if (p.id !== id && p.name.toLowerCase() === targetName.toLowerCase()) {
+            target = p
+            break
+          }
+        }
+
+        if (!target) {
+          send(ws, { type: 'whisper_error', targetName })
+        } else {
+          send(target.ws, { type: 'whisper', fromName: player.name, toName: target.name, text, isSelf: false })
+          send(ws,         { type: 'whisper', fromName: player.name, toName: target.name, text, isSelf: true })
+          console.log(`[Atlas Susurro] ${player.name} → ${target.name}: ${text.slice(0, 40)}`)
+        }
+      }
+
       // ── Radio sincronizada ──
       // Cualquier usuario puede cambiar la estación de la sala.
       // Se hace broadcast a TODOS (los que tengan sync ON lo aplican).

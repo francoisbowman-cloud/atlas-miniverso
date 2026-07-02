@@ -2,7 +2,7 @@
  * RadioPlayer — emisora de ambiente para la cafetería Atlas.
  *
  * Características:
- * • 3 categorías: SomaFM (12 estaciones) | 🇩🇴 RD (6 emisoras) | ★ Custom
+ * • 3 categorías: SomaFM (12 estaciones) | 🇩🇴 RD (5 emisoras) | ★ Custom
  * • Sincronización de sala: cualquiera puede cambiar la estación y todos
  *   los que tienen sync ON la escuchan juntos (interruptor opcional)
  * • URL personalizada: pega cualquier stream MP3/AAC o enlace de YouTube
@@ -34,14 +34,14 @@ const SOMA_STATIONS: Station[] = [
   { name: 'DEF CON Radio',      genre: 'Electronic • Techno', url: 'https://ice1.somafm.com/defcon-128-mp3',       color: '#D45B5B' },
 ]
 
-// Emisoras dominicanas — si una URL no conecta, usa la pestaña Custom
+// Emisoras dominicanas — cargadas como iframe de Zeno.FM (no requieren CORS)
+// UUID obtenido de la og:image de cada página en zeno.fm/radio/{slug}/
 const RD_STATIONS: Station[] = [
-  { name: 'Z101 FM',        genre: 'Merengue • Bachata',  url: 'https://playerservices.streamtheworld.com/api/livestream-redirect/Z101.mp3', color: '#E8412E' },
-  { name: 'Xtreme FM',      genre: 'Pop • Reggaetón',     url: 'https://stream.zeno.fm/xtremefm-rd',                                         color: '#FF6B35' },
-  { name: 'La 94.9',        genre: 'Tropical • Clásicos', url: 'https://stream.zeno.fm/la949-rd',                                            color: '#FFB347' },
-  { name: 'Mega 97.9',      genre: 'Hit Music',           url: 'https://stream.zeno.fm/mega979-rd',                                          color: '#F5C518' },
-  { name: 'Romántica 96.5', genre: 'Baladas • Romántica', url: 'https://stream.zeno.fm/romantica965-rd',                                     color: '#E87B9A' },
-  { name: 'Kaché 107.1',    genre: 'Variada • Tropical',  url: 'https://stream.zeno.fm/kache1071-rd',                                        color: '#7BD4E8' },
+  { name: 'Tropical 100 Mix',      genre: 'Merengue • Bachata', url: 'https://player.zeno.fm/0/station/3159b3e6-78a8-4d0e-b13a-0f61c7529b18', color: '#E8412E' },
+  { name: 'Tropical 100 Merengue', genre: 'Merengue',           url: 'https://player.zeno.fm/0/station/b61c1c77-a254-4be6-8bf2-d0eb69097b4e', color: '#FF6B35' },
+  { name: 'Tropical 100 Salsa',    genre: 'Salsa',              url: 'https://player.zeno.fm/0/station/26a6380c-1c6b-4c9d-946b-bd033b1f7133', color: '#FFB347' },
+  { name: 'Bachata Hit Radio',     genre: 'Bachata',            url: 'https://player.zeno.fm/0/station/737e66c4-24cc-4d5e-9139-6ca4589eca88', color: '#E87B9A' },
+  { name: 'Caliente 104',          genre: 'Variada • Tropical', url: 'https://player.zeno.fm/0/station/4ad639bb-b5ec-4d02-978a-82c364e3dd1a', color: '#F5C518' },
 ]
 
 type Category = 'somafm' | 'rd' | 'custom'
@@ -340,6 +340,58 @@ export class RadioPlayer {
     this.updateSyncBtn()
     this.updateCurrentInfo()
     this.refreshListHighlight()
+
+    // Drag para reposicionar el panel
+    this.makeDraggable(panel, header)
+  }
+
+  // ─── DRAG ─────────────────────────────────────────────────────────────────
+
+  private makeDraggable(panel: HTMLElement, handle: HTMLElement) {
+    let sx = 0, sy = 0, sr = 0, st = 0
+    let dragging = false
+
+    const xy = (e: MouseEvent | TouchEvent) => {
+      const s = e instanceof TouchEvent ? e.touches[0] : e
+      return { x: s.clientX, y: s.clientY }
+    }
+
+    const onStart = (e: MouseEvent | TouchEvent) => {
+      const t = e.target as HTMLElement
+      if (t.tagName === 'BUTTON' || t.tagName === 'INPUT') return
+      const r = panel.getBoundingClientRect()
+      const p = xy(e)
+      sx = p.x; sy = p.y
+      sr = window.innerWidth - r.right
+      st = r.top
+      dragging = true
+      panel.style.bottom = 'auto'; panel.style.left = 'auto'
+      panel.style.right = sr + 'px'; panel.style.top = st + 'px'
+      document.addEventListener('mousemove', onMove)
+      document.addEventListener('touchmove', onMove, { passive: false })
+      document.addEventListener('mouseup', onEnd)
+      document.addEventListener('touchend', onEnd)
+    }
+
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      if (!dragging) return
+      if (e instanceof TouchEvent) e.preventDefault()
+      const p = xy(e)
+      const dx = p.x - sx, dy = p.y - sy
+      panel.style.right = Math.max(0, sr - dx) + 'px'
+      panel.style.top   = Math.max(0, st + dy) + 'px'
+    }
+
+    const onEnd = () => {
+      dragging = false
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('touchmove', onMove)
+      document.removeEventListener('mouseup', onEnd)
+      document.removeEventListener('touchend', onEnd)
+    }
+
+    handle.addEventListener('mousedown', onStart)
+    handle.addEventListener('touchstart', onStart, { passive: true })
   }
 
   // ─── LÓGICA DE TABS / SELECCIÓN ───────────────────────────────────────────
@@ -367,7 +419,7 @@ export class RadioPlayer {
 
   private selectStation(cat: Category, i: number) {
     const wasPlaying = this._playing
-    if (wasPlaying) { this.audio.pause(); this.hideYtFrame() }
+    if (wasPlaying) { this.audio.pause(); this.hideEmbedFrame() }
 
     this.cat = cat
     this.idx = i
@@ -411,7 +463,7 @@ export class RadioPlayer {
   private toggle() {
     if (this._playing) {
       this.audio.pause()
-      this.hideYtFrame()
+      this.hideEmbedFrame()
       this._playing = false
       this.elPlayBtn.textContent = '▶'
       this.elDot.classList.remove('pulsing')
@@ -426,14 +478,21 @@ export class RadioPlayer {
     const url = this.getCurrentUrl()
     if (!url) return
 
-    const ytId = extractYouTubeId(url)
+    const ytId   = extractYouTubeId(url)
+    const zenoId = extractZenoId(url)
+
     if (ytId) {
       this.audio.pause()
-      this.showYtFrame(ytId)
+      this.showEmbedFrame(`https://www.youtube.com/embed/${ytId}?autoplay=1&enablejsapi=1`, false)
+      this.elPlayBtn.textContent = '⏸'
+      this.elDot.classList.add('pulsing')
+    } else if (zenoId) {
+      this.audio.pause()
+      this.showEmbedFrame(`https://player.zeno.fm/0/station/${zenoId}`, true)
       this.elPlayBtn.textContent = '⏸'
       this.elDot.classList.add('pulsing')
     } else {
-      this.hideYtFrame()
+      this.hideEmbedFrame()
       this.audio.src    = url
       this.audio.volume = this._volume
       this.audio.load()
@@ -445,7 +504,6 @@ export class RadioPlayer {
         this.elPlayBtn.textContent = '▶'
         this.elDot.classList.remove('pulsing')
         console.warn('[Atlas Radio] No se pudo reproducir:', err)
-        // Si falla una emisora dominicana, mostrar sugerencia en el nombre
         if (this.cat === 'rd') {
           this.elCurrentGenre.textContent = '⚠ Stream no disponible — prueba Custom ↗'
         }
@@ -458,9 +516,9 @@ export class RadioPlayer {
     return stationsFor(this.cat)[this.idx]?.url ?? ''
   }
 
-  // ─── YOUTUBE IFRAME ───────────────────────────────────────────────────────
+  // ─── EMBED IFRAME (YouTube + Zeno.FM) ────────────────────────────────────
 
-  private showYtFrame(videoId: string) {
+  private showEmbedFrame(src: string, isZeno: boolean) {
     if (!this.ytFrame) {
       const iframe = document.createElement('iframe')
       iframe.id = 'radio-yt-iframe'
@@ -468,12 +526,19 @@ export class RadioPlayer {
       this.ytFrame = iframe
       this.elYtWrap.appendChild(iframe)
     }
-    const src = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`
-    if (!this.ytFrame.src.includes(videoId)) this.ytFrame.src = src
+    if (this.ytFrame.src !== src) this.ytFrame.src = src
+    // Zeno.FM player es un widget compacto; YouTube necesita proporción 16/9
+    if (isZeno) {
+      this.elYtWrap.style.aspectRatio = 'unset'
+      this.elYtWrap.style.height = '160px'
+    } else {
+      this.elYtWrap.style.height = ''
+      this.elYtWrap.style.aspectRatio = '16/9'
+    }
     this.elYtWrap.style.display = 'block'
   }
 
-  private hideYtFrame() {
+  private hideEmbedFrame() {
     if (this.ytFrame) this.ytFrame.src = ''
     this.elYtWrap.style.display = 'none'
   }
@@ -557,7 +622,9 @@ export class RadioPlayer {
         display: flex; align-items: center; gap: 6px;
         padding: 8px 10px;
         border-bottom: 1px solid rgba(60, 36, 12, 0.30);
+        cursor: grab;
       }
+      #radio-header:active { cursor: grabbing; }
       #radio-dot {
         font-size: 9px; color: var(--accent); transition: color .4s; flex-shrink: 0;
       }
@@ -693,5 +760,11 @@ function extractYouTubeId(url: string): string | null {
   const m = url.match(
     /(?:youtube\.com\/(?:watch\?v=|live\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
   )
+  return m ? m[1] : null
+}
+
+function extractZenoId(url: string): string | null {
+  // Detecta https://player.zeno.fm/0/station/{UUID}
+  const m = url.match(/player\.zeno\.fm\/0\/station\/([0-9a-f-]{36})/)
   return m ? m[1] : null
 }

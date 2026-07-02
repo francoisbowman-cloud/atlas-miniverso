@@ -296,14 +296,14 @@ export class AvatarCustomizer {
     body.appendChild(hairS)
     body.appendChild(outfitS)
     body.appendChild(this.nameSection())
-    panel.appendChild(body)
 
-    // Footer
-    const footer = document.createElement('div')
-    footer.id = 'customizer-footer'
-    footer.style.cssText = 'border-top: 1px solid #1A1208;'
-    footer.appendChild(this.enterButton())
-    panel.appendChild(footer)
+    // Botón entrar — dentro del body para que siempre sea visible al hacer scroll
+    const enterWrap = document.createElement('div')
+    enterWrap.style.cssText = 'padding: 10px 0 24px;'
+    enterWrap.appendChild(this.enterButton())
+    body.appendChild(enterWrap)
+
+    panel.appendChild(body)
 
     document.body.appendChild(panel)
     return panel
@@ -541,11 +541,6 @@ export class AvatarCustomizer {
         height: 100vh;
         height: -webkit-fill-available;
         height: 100dvh;
-      }
-
-      /* Footer: safe area para iPhone (home indicator) */
-      #customizer-footer {
-        padding: 14px 22px max(22px, calc(14px + env(safe-area-inset-bottom, 0px)));
       }
 
       /* Móvil: panel ocupa todo el ancho */

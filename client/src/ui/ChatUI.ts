@@ -7,7 +7,8 @@
  * • WASD no se dispara cuando el input tiene foco
  */
 export class ChatUI {
-  onSend: ((text: string) => void) | null = null
+  onSend:    ((text: string) => void) | null = null
+  onWhisper: ((target: string, text: string) => void) | null = null
 
   private panel:     HTMLDivElement
   private list:      HTMLDivElement
@@ -100,7 +101,6 @@ export class ChatUI {
     header.appendChild(label)
     header.appendChild(badge)
     header.appendChild(toggle)
-    header.addEventListener('click', () => this.setExpanded(!this._expanded))
     panel.appendChild(header)
 
     // ── Cuerpo (colapsable) ──
@@ -136,7 +136,57 @@ export class ChatUI {
     panel.appendChild(body)
 
     document.body.appendChild(panel)
+    this.makeDraggable(panel, header, () => this.setExpanded(!this._expanded))
     return { panel, list, input, badge, body }
+  }
+
+  // ─── DRAG ─────────────────────────────────────────────────────────────────
+
+  private makeDraggable(panel: HTMLElement, handle: HTMLElement, onTap: () => void) {
+    let sx = 0, sy = 0, sl = 0, st = 0
+    let dragging = false, moved = false
+
+    const xy = (e: MouseEvent | TouchEvent) => {
+      const s = e instanceof TouchEvent ? e.touches[0] : e
+      return { x: s.clientX, y: s.clientY }
+    }
+
+    const onStart = (e: MouseEvent | TouchEvent) => {
+      const t = e.target as HTMLElement
+      if (t.tagName === 'BUTTON' || t.tagName === 'INPUT') return
+      const r = panel.getBoundingClientRect()
+      const p = xy(e)
+      sx = p.x; sy = p.y; sl = r.left; st = r.top
+      dragging = true; moved = false
+      panel.style.bottom = 'auto'; panel.style.right = 'auto'
+      panel.style.left = sl + 'px'; panel.style.top = st + 'px'
+      document.addEventListener('mousemove', onMove)
+      document.addEventListener('touchmove', onMove, { passive: false })
+      document.addEventListener('mouseup', onEnd)
+      document.addEventListener('touchend', onEnd)
+    }
+
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      if (!dragging) return
+      if (e instanceof TouchEvent) e.preventDefault()
+      const p = xy(e)
+      const dx = p.x - sx, dy = p.y - sy
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) moved = true
+      panel.style.left = Math.max(0, sl + dx) + 'px'
+      panel.style.top  = Math.max(0, st + dy) + 'px'
+    }
+
+    const onEnd = () => {
+      dragging = false
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('touchmove', onMove)
+      document.removeEventListener('mouseup', onEnd)
+      document.removeEventListener('touchend', onEnd)
+      if (!moved) onTap()
+    }
+
+    handle.addEventListener('mousedown', onStart)
+    handle.addEventListener('touchstart', onStart, { passive: true })
   }
 
   private setExpanded(val: boolean) {
@@ -155,8 +205,63 @@ export class ChatUI {
   private send() {
     const text = this.input.value.trim()
     if (!text) return
+
+    // Comando /susurro @nombre mensaje
+    const m = text.match(/^\/susurro\s+@(\S+)\s+(.+)$/i)
+    if (m) {
+      this.input.value = ''
+      this.onWhisper?.(m[1], m[2])
+      return
+    }
+
     this.input.value = ''
     this.onSend?.(text)
+  }
+
+  /** Muestra un mensaje de susurro (privado) en el chat con estilo diferenciado */
+  addWhisperMessage(fromName: string, toName: string, text: string, isSelf: boolean) {
+    while (this.list.children.length >= this.MAX_MSG) {
+      this.list.removeChild(this.list.firstChild!)
+    }
+    const now = new Date()
+    const time = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`
+
+    const row = document.createElement('div')
+    row.className = isSelf ? 'chat-row chat-self chat-whisper-row' : 'chat-row chat-whisper-row'
+
+    const meta = document.createElement('div')
+    meta.className = 'chat-meta'
+    const label = isSelf
+      ? `💬 ${esc(fromName)} → ${esc(toName)}`
+      : `💬 ${esc(fromName)} → ti`
+    meta.innerHTML = `<span class="chat-name chat-whisper-name">${label}</span><span class="chat-time">${time}</span>`
+
+    const bubble = document.createElement('div')
+    bubble.className   = 'chat-bubble chat-whisper-bubble'
+    bubble.textContent = text
+
+    row.appendChild(meta)
+    row.appendChild(bubble)
+    this.list.appendChild(row)
+    this.list.scrollTop = this.list.scrollHeight
+
+    if (!this._expanded) {
+      this._unread++
+      this.badge.textContent = String(this._unread)
+      this.badge.style.display = 'flex'
+    }
+  }
+
+  /** Muestra un mensaje de sistema (error, aviso) en el chat */
+  addSystemMessage(text: string) {
+    const row = document.createElement('div')
+    row.className = 'chat-row'
+    const bubble = document.createElement('div')
+    bubble.className   = 'chat-bubble chat-system-bubble'
+    bubble.textContent = text
+    row.appendChild(bubble)
+    this.list.appendChild(row)
+    this.list.scrollTop = this.list.scrollHeight
   }
 
   // ─── ESTILOS ──────────────────────────────────────────────────────────────
@@ -170,15 +275,15 @@ export class ChatUI {
         position: fixed;
         left: 16px;
         bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-        width: min(300px, calc(100vw - 32px));
+        width: min(420px, calc(100vw - 32px));
         display: flex; flex-direction: column;
         z-index: 100;
         font-family: Arial, sans-serif;
-        /* Subir en móvil para evitar zona de gestos de Chrome Android */
         margin-bottom: env(safe-area-inset-bottom, 0px);
+        cursor: grab;
       }
       @media (max-width: 500px) {
-        #chat-panel { bottom: 70px; }
+        #chat-panel { bottom: 70px; width: min(320px, calc(100vw - 32px)); }
       }
 
       /* ── Header ── */
@@ -296,6 +401,23 @@ export class ChatUI {
         touch-action: manipulation;
       }
       #chat-send:hover { opacity: .82; }
+
+      /* ── Whisper ── */
+      .chat-whisper-name { color: #C87BC8 !important; }
+      .chat-whisper-bubble {
+        background: rgba(40, 10, 55, 0.88) !important;
+        border-color: rgba(180, 110, 220, 0.35) !important;
+        font-style: italic;
+        color: #EDD0F5 !important;
+      }
+      /* ── Sistema ── */
+      .chat-system-bubble {
+        background: rgba(6, 6, 6, 0.70) !important;
+        border-color: rgba(80, 60, 30, 0.40) !important;
+        color: #7A6040 !important;
+        font-size: 11px !important;
+        font-style: italic;
+      }
     `
     document.head.appendChild(s)
   }

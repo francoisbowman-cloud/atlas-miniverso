@@ -36,6 +36,12 @@ export class NetworkManager {
   // Callback de chat: (id, name, text, isSelf)
   onChat: ((id: string, name: string, text: string, isSelf: boolean) => void) | null = null
 
+  // Callback de susurro: (fromName, toName, text, isSelf)
+  onWhisper: ((fromName: string, toName: string, text: string, isSelf: boolean) => void) | null = null
+
+  // Callback de error de susurro: (targetName)
+  onWhisperError: ((targetName: string) => void) | null = null
+
   // Callback de radio: (category, idx, customUrl?, customLabel?)
   onRadioChange: ((category: string, idx: number, customUrl?: string, customLabel?: string) => void) | null = null
 
@@ -142,6 +148,14 @@ export class NetworkManager {
         // El servidor retransmite radio_state a todos cada vez que alguien cambia
         this.onRadioChange?.(msg.category, msg.idx, msg.customUrl, msg.customLabel)
         break
+
+      case 'whisper':
+        this.onWhisper?.(msg.fromName, msg.toName, msg.text, msg.isSelf === true)
+        break
+
+      case 'whisper_error':
+        this.onWhisperError?.(msg.targetName)
+        break
     }
   }
 
@@ -173,6 +187,10 @@ export class NetworkManager {
 
   sendRadioChange(category: string, idx: number, customUrl?: string, customLabel?: string) {
     this.send({ type: 'radio_change', category, idx, customUrl, customLabel })
+  }
+
+  sendWhisper(targetName: string, text: string) {
+    this.send({ type: 'whisper', targetName, text })
   }
 
   private sendPosition() {

@@ -93,9 +93,17 @@ async function boot() {
 
       // 6. Chat
       const chat = new ChatUI()
-      chat.onSend = (text) => net.sendChat(text)
-      net.onChat  = (_, name, text, isSelf) => {
+      chat.onSend    = (text) => net.sendChat(text)
+      chat.onWhisper = (target, text) => net.sendWhisper(target, text)
+
+      net.onChat = (_, name, text, isSelf) => {
         chat.addMessage(isSelf ? 'Tú' : name, text, isSelf)
+      }
+      net.onWhisper = (fromName, toName, text, isSelf) => {
+        chat.addWhisperMessage(fromName, toName, text, isSelf)
+      }
+      net.onWhisperError = (targetName) => {
+        chat.addSystemMessage(`⚠ @${targetName} no está en la sala`)
       }
 
       // WASD se bloquea si el chat tiene el foco
