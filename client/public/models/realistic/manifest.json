@@ -1,0 +1,16 @@
+{
+  "collections": {
+    "los8": {
+      "descripcion": "Los 8 avatares núcleo, diversos y optimizados para GPU integrada. Colección estable que siempre se conserva.",
+      "core": true,
+      "avatares": [
+        "latina_f", "latino_m",
+        "afro_f", "afro_m",
+        "asiatica_f", "asiatico_m",
+        "caucasica_f", "caucasico_m"
+      ]
+    }
+  },
+  "extras": [],
+  "nota": "Los .glb en extras[] o sin listar se pueden retirar con 'python avatar_library.py solo-los8'. Registrar aquí modelos añadidos (ej. Nathan) como extra para poder quitarlos luego."
+}
