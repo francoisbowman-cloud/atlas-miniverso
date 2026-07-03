@@ -12,8 +12,9 @@
  * Docs: https://docs.avaturn.me/docs/integration/web/
  */
 
-// AVATURN_URL para demo (sin API key). En producción usar subdominio propio.
-const AVATURN_URL = 'https://app.avaturn.me'
+// AVATURN_URL para demo (sin API key). En producción usar subdominio propio:
+// registrar en https://developer.avaturn.me y usar 'https://TU-SUBDOMINIO.avaturn.dev'
+const AVATURN_URL = 'https://demo.avaturn.dev'
 
 export class AvaturnCreator {
   private overlay:   HTMLDivElement

@@ -30,9 +30,10 @@ const REALISTIC_AVATARS: RealisticAvatar[] = [
 const REALISTIC_DIR = '/models/realistic/'
 const DOLL_URL      = '/models/avatar_doll.glb'   // avatar estilizado personalizable por color
 
-// "Crear con mi foto" (Avaturn) deprioritado por ahora — el código sigue
-// intacto, solo no se muestra el botón. Cambiar a true para reactivarlo.
-const ENABLE_AVATURN = false
+// Avaturn activado: muestra el botón "🎭 Crear con Avaturn" en el customizador.
+// Para producción: registrar en https://developer.avaturn.me y actualizar AVATURN_URL
+// en AvaturnCreator.ts con el subdominio propio.
+const ENABLE_AVATURN = true
 
 // ─── PALETAS ──────────────────────────────────────────────────────────────────
 
@@ -333,7 +334,7 @@ export class AvatarCustomizer {
       const photoBtn = document.createElement('button')
       photoBtn.className = 'appear-photo'
       photoBtn.dataset.group = 'appearance'
-      photoBtn.innerHTML = '📷 Crear con mi foto'
+      photoBtn.innerHTML = '🎭 Crear con Avaturn'
       photoBtn.addEventListener('click', () => this.openAvaturn(photoBtn))
       wrap.appendChild(photoBtn)
     }
