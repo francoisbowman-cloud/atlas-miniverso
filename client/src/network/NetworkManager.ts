@@ -15,6 +15,7 @@ interface PlayerData {
   hair:   RGB
   jacket: RGB
   pants:  RGB
+  avatarUrl?: string
 }
 
 /**
@@ -140,7 +141,7 @@ export class NetworkManager {
 
       case 'player_identity': {
         const rp = this.remotePlayers.get(msg.id)
-        if (rp) rp.applyIdentity(msg.name, msg.skin, msg.hair, msg.jacket, msg.pants)
+        if (rp) rp.applyIdentity(msg.name, msg.skin, msg.hair, msg.jacket, msg.pants, msg.avatarUrl)
         this.playerNames.set(msg.id, msg.name)
         this.notifyPlayerList()
         // Si es un recién llegado, disparar notificación de entrada
@@ -195,7 +196,7 @@ export class NetworkManager {
     if (this.remotePlayers.has(data.id)) return
     const rp = new RemotePlayer(this.scene, data.id)
     rp.moveTo(data.x, data.y, data.z, data.ry)
-    rp.applyIdentity(data.name, data.skin, data.hair, data.jacket, data.pants)
+    rp.applyIdentity(data.name, data.skin, data.hair, data.jacket, data.pants, data.avatarUrl)
     this.remotePlayers.set(data.id, rp)
     this.playerNames.set(data.id, data.name)
     this.notifyPlayerList()
@@ -209,9 +210,9 @@ export class NetworkManager {
 
   // ─── MENSAJES SALIENTES ───────────────────────────────────────────────────
 
-  sendIdentity(name: string, skin: RGB, hair: RGB, jacket: RGB, pants: RGB) {
+  sendIdentity(name: string, skin: RGB, hair: RGB, jacket: RGB, pants: RGB, avatarUrl: string) {
     this.myName = name
-    const data = { type: 'identity', name, skin, hair, jacket, pants }
+    const data = { type: 'identity', name, skin, hair, jacket, pants, avatarUrl }
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.send(data)
     } else {

@@ -72,6 +72,7 @@ interface PlayerState {
   hair:   RGB
   jacket: RGB
   pants:  RGB
+  avatarUrl: string   // GLB que representa a este jugador (realista/foto/estilizado)
 }
 
 interface RadioState {
@@ -129,6 +130,7 @@ wss.on('connection', (ws) => {
     hair:   [0.10, 0.07, 0.04],
     jacket: [0.14, 0.26, 0.52],
     pants:  [0.12, 0.14, 0.22],
+    avatarUrl: '/models/realistic/latina_f.glb',   // por defecto, coincide con el cliente
   }
   players.set(id, player)
 
@@ -160,15 +162,17 @@ wss.on('connection', (ws) => {
 
       // ── Identidad ──
       if (msg.type === 'identity') {
-        player.name   = msg.name   ?? player.name
-        player.skin   = msg.skin   ?? player.skin
-        player.hair   = msg.hair   ?? player.hair
-        player.jacket = msg.jacket ?? player.jacket
-        player.pants  = msg.pants  ?? player.pants
+        player.name      = msg.name      ?? player.name
+        player.skin      = msg.skin      ?? player.skin
+        player.hair      = msg.hair      ?? player.hair
+        player.jacket    = msg.jacket    ?? player.jacket
+        player.pants     = msg.pants     ?? player.pants
+        player.avatarUrl = msg.avatarUrl ?? player.avatarUrl
         broadcast({
           type: 'player_identity', id,
           name: player.name, skin: player.skin,
           hair: player.hair, jacket: player.jacket, pants: player.pants,
+          avatarUrl: player.avatarUrl,
         }, id)
       }
 

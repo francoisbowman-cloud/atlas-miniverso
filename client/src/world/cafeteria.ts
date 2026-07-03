@@ -6,6 +6,7 @@ import {
   Vector3,
   PointLight,
   Mesh,
+  DynamicTexture,
 } from '@babylonjs/core'
 
 /**
@@ -38,6 +39,8 @@ export class Cafeteria {
     this.createPlants()
     this.createDecorations()
     this.createWindows()
+    this.createWallArt()
+    this.createCeilingBeams()
   }
 
   // ─── MATERIALES REUTILIZABLES ────────────────────────────────────────────
@@ -494,38 +497,18 @@ export class Cafeteria {
   // ─── DECORACIONES ─────────────────────────────────────────────────────────
 
   private createDecorations() {
-    // ── Cuadros en la pared del fondo ──
-    const frameMat = this.mat('frameMat', 0.18, 0.12, 0.06)
-    const canvasMats = [
-      this.mat('canvas0', 0.65, 0.38, 0.22),  // naranja cálido
-      this.mat('canvas1', 0.22, 0.35, 0.52),  // azul suave
-      this.mat('canvas2', 0.42, 0.55, 0.30),  // verde oliva
-    ]
-
-    const paintings: [number, number][] = [[-6, 2.8], [0, 2.8], [6, 2.8]]
-    paintings.forEach(([px, py], i) => {
-      const frame = MeshBuilder.CreateBox(`frame${i}`, { width: 1.10, height: 0.85, depth: 0.06 }, this.scene)
-      frame.position.set(px, py, -(this.D/2) + 0.06)
-      frame.material = frameMat
-
-      const canvas = MeshBuilder.CreateBox(`canvas${i}`, { width: 0.90, height: 0.66, depth: 0.05 }, this.scene)
-      canvas.position.set(px, py, -(this.D/2) + 0.08)
-      canvas.material = canvasMats[i % canvasMats.length]
-    })
-
     // ── Lámpara de pie en rincón sofá ──
-    const lampMat = this.mat('lampMat', 0.28, 0.24, 0.20, 0.25)
     const lampPole = MeshBuilder.CreateCylinder('lampPole', {
       diameter: 0.05, height: 1.65, tessellation: 8,
     }, this.scene)
     lampPole.position.set((this.W/2) - 2.2, 0.83, -(this.D/2) + 1.2)
-    lampPole.material = lampMat
+    lampPole.material = this.mat('lampMat', 0.28, 0.24, 0.20, 0.25)
 
     const lampShade = MeshBuilder.CreateCylinder('lampShade', {
       diameterTop: 0.12, diameterBottom: 0.34, height: 0.28, tessellation: 16,
     }, this.scene)
     lampShade.position.set((this.W/2) - 2.2, 1.80, -(this.D/2) + 1.2)
-    lampShade.material = this.mat('lampShade', 0.82, 0.70, 0.48)
+    lampShade.material = this.mat('lampShadeM', 0.82, 0.70, 0.48)
 
     const lampLight = new PointLight('lampLight', new Vector3((this.W/2) - 2.2, 1.6, -(this.D/2) + 1.2), this.scene)
     lampLight.diffuse   = new Color3(1, 0.75, 0.40)
@@ -542,28 +525,216 @@ export class Cafeteria {
       [0.70, 0.58, 0.18], [0.40, 0.22, 0.55],
     ]
     for (let row = 0; row < 3; row++) {
-      let bx = -(this.W/2) + 0.14
       for (let b = 0; b < 6; b++) {
-        const bw = 0.07 + (b % 3) * 0.02
         const bh = 0.26 + (b % 2) * 0.06
         const book = MeshBuilder.CreateBox(`book${row}_${b}`, {
-          width: 0.14, height: bh, depth: bw,
+          width: 0.14, height: bh, depth: 0.07 + (b % 3) * 0.02,
         }, this.scene)
-        book.position.set(bx, 0.38 + row * 0.72 + bh / 2, -2.0 + b * 0.30)
+        book.position.set(-(this.W/2) + 0.14, 0.38 + row * 0.72 + bh / 2, -2.0 + b * 0.30)
         book.material = this.mat(`bookMat${row}${b}`, ...bookColors[(row * 6 + b) % bookColors.length], 0.06)
-        bx += 0.02
       }
     }
 
     // ── Mostrador de caja / punto de pedidos ──
-    const cashMat = this.mat('cashMat', 0.22, 0.14, 0.07)
     const cash = MeshBuilder.CreateBox('cashDesk', { width: 1.2, height: 1.05, depth: 0.60 }, this.scene)
     cash.position.set(-3.5, 0.53, -(this.D/2) + 2.2)
-    cash.material = cashMat
+    cash.material = this.mat('cashMat', 0.22, 0.14, 0.07)
 
     const cashTop = MeshBuilder.CreateBox('cashTop', { width: 1.22, height: 0.05, depth: 0.62 }, this.scene)
     cashTop.position.set(-3.5, 1.08, -(this.D/2) + 2.2)
     cashTop.material = this.mat('cashTopMat', 0.75, 0.72, 0.68, 0.18)
+  }
+
+  // ─── ARTE MURAL (NUEVO) ───────────────────────────────────────────────────
+
+  private createWallArt() {
+    // ── Panel de acento oscuro detrás de la barra (pared del fondo) ──
+    // Crea profundidad visual: la zona de barra se separa del resto
+    const accent = MeshBuilder.CreateBox('barAccent', { width: 8.0, height: 4.6, depth: 0.03 }, this.scene)
+    accent.position.set(-7.5, 2.4, -(this.D/2) + 0.28)
+    accent.material = this.mat('barAccentMat', 0.11, 0.08, 0.06)
+
+    // ── Arte geométrico abstracto — 3 composiciones en pared del fondo ──
+
+    // Composición 1 (izquierda): campo terracota + franja
+    this.artPanel('art1bg',     -6.5, 2.90, 1.80, 1.40, 0.62, 0.30, 0.16)   // fondo terracota
+    this.artPanel('art1stripe', -6.9, 2.90, 0.10, 1.40, 0.18, 0.08, 0.04)   // franja oscura
+    this.artPanel('art1rect',   -6.2, 2.65, 0.80, 0.55, 0.80, 0.55, 0.28)   // cuadrado arena
+    this.artFrame('art1frame',  -6.5, 2.90, 1.90, 1.50)                       // marco fino
+
+    // Composición 2 (centro): líneas verticales minimalistas sobre fondo oscuro
+    this.artPanel('art2bg',     0, 2.90, 2.00, 1.40, 0.14, 0.11, 0.09)       // fondo muy oscuro
+    for (let i = 0; i < 5; i++) {
+      const x = -0.72 + i * 0.36
+      const h = 0.60 + (i % 3) * 0.28
+      const warmth = 0.55 + i * 0.06
+      this.artPanel(`art2line${i}`, x, 2.90, 0.055, h, warmth, warmth * 0.55, 0.20)
+    }
+    this.artFrame('art2frame', 0, 2.90, 2.10, 1.50)
+
+    // Composición 3 (derecha): bloques de color superpuestos
+    this.artPanel('art3bg',  6.5, 2.90, 1.80, 1.40, 0.28, 0.35, 0.42)       // fondo azul pizarra
+    this.artPanel('art3r1',  6.1, 3.25, 1.00, 0.60, 0.72, 0.55, 0.28)       // rectángulo ámbar
+    this.artPanel('art3r2',  6.8, 2.50, 0.70, 0.50, 0.55, 0.28, 0.22)       // cuadrado óxido
+    this.artPanel('art3dot', 6.5, 2.90, 0.22, 0.22, 0.88, 0.80, 0.55)       // punto luz
+    this.artFrame('art3frame', 6.5, 2.90, 1.90, 1.50)
+
+    // ── Panel de listones de madera en pared derecha (sección inferior) ──
+    // Decoración arquitectónica: tablones verticales de madera oscura
+    const slatCount = 14
+    const slatH     = 2.20
+    const slatY     = slatH / 2
+    const slatZ     = (this.W / 2) - 0.04   // pared derecha
+    for (let i = 0; i < slatCount; i++) {
+      const slat = MeshBuilder.CreateBox(`slat${i}`, {
+        width: 0.08, height: slatH, depth: 0.05,
+      }, this.scene)
+      // Distribuidos a lo largo de z entre los marcos de ventana
+      slat.position.set(slatZ, slatY, -5.5 + i * 0.40)
+      // Alternamos dos tonos para dar profundidad
+      const dark = i % 2 === 0
+      slat.material = this.mat(`slatMat${i}`,
+        dark ? 0.22 : 0.30,
+        dark ? 0.13 : 0.18,
+        dark ? 0.06 : 0.09,
+        0.04,
+      )
+    }
+
+    // ── Señal "ATLAS" tipo neón sobre la puerta de entrada ──
+    this.buildAtlasSign()
+
+    // ── Panel decorativo en pared lateral izquierda ──
+    // Área geométrica: círculo grande difuminado (aproximado con esferas)
+    const geoPanel = MeshBuilder.CreateBox('geoPanel', { width: 0.03, height: 3.0, depth: 3.0 }, this.scene)
+    geoPanel.position.set(-(this.W/2) + 0.06, 2.6, 2)
+    geoPanel.material = this.mat('geoPanelMat', 0.16, 0.12, 0.09)
+
+    // Arco decorativo sobre el panel (semicírculo con cajas finas)
+    const arcR  = 1.10
+    const arcCX = -(this.W/2) + 0.05
+    const arcCY = 2.80
+    const arcCZ = 2.00
+    for (let i = 0; i <= 10; i++) {
+      const angle = Math.PI * (i / 10)  // 0 a π (media luna)
+      const ay = arcCY + Math.sin(angle) * arcR
+      const az = arcCZ + Math.cos(angle) * arcR
+      const seg = MeshBuilder.CreateBox(`arc${i}`, { width: 0.04, height: 0.08, depth: 0.08 }, this.scene)
+      seg.position.set(arcCX, ay, az)
+      seg.material = this.mat(`arcMat${i}`, 0.70, 0.52, 0.28, 0.10)
+    }
+  }
+
+  /** Crea un panel de color (caja plana) sobre la pared del fondo */
+  private artPanel(name: string, x: number, y: number, w: number, h: number, r: number, g: number, b: number) {
+    const p = MeshBuilder.CreateBox(name, { width: w, height: h, depth: 0.025 }, this.scene)
+    p.position.set(x, y, -(this.D/2) + 0.09)
+    p.material = this.mat(name + '_m', r, g, b, 0.04)
+  }
+
+  /** Marco fino de madera oscura alrededor de una composición */
+  private artFrame(name: string, x: number, y: number, w: number, h: number) {
+    const frameMat = this.mat(name + '_m', 0.16, 0.10, 0.05, 0.08)
+    const thick    = 0.04
+    const d        = 0.030
+
+    // Superior
+    const top = MeshBuilder.CreateBox(name + '_t', { width: w, height: thick, depth: d }, this.scene)
+    top.position.set(x, y + h/2 - thick/2, -(this.D/2) + 0.07)
+    top.material = frameMat
+    // Inferior
+    const bot = MeshBuilder.CreateBox(name + '_b', { width: w, height: thick, depth: d }, this.scene)
+    bot.position.set(x, y - h/2 + thick/2, -(this.D/2) + 0.07)
+    bot.material = frameMat
+    // Izquierdo
+    const lft = MeshBuilder.CreateBox(name + '_l', { width: thick, height: h, depth: d }, this.scene)
+    lft.position.set(x - w/2 + thick/2, y, -(this.D/2) + 0.07)
+    lft.material = frameMat
+    // Derecho
+    const rgt = MeshBuilder.CreateBox(name + '_r', { width: thick, height: h, depth: d }, this.scene)
+    rgt.position.set(x + w/2 - thick/2, y, -(this.D/2) + 0.07)
+    rgt.material = frameMat
+  }
+
+  /** Señal luminosa "ATLAS" con letras emissive tipo neón suave */
+  private buildAtlasSign() {
+    // Letras representadas con DynamicTexture sobre un plano
+    const plane = MeshBuilder.CreatePlane('atlasSign', { width: 3.2, height: 0.55 }, this.scene)
+    plane.position.set(0, 4.20, (this.D/2) - 0.18)
+    plane.rotation.y = Math.PI   // mira hacia el interior
+
+    const tex = new DynamicTexture('atlasSignTex', { width: 512, height: 88 }, this.scene)
+    tex.hasAlpha = true
+
+    const ctx = tex.getContext()
+    ctx.clearRect(0, 0, 512, 88)
+
+    // Fondo oscuro transparente con borde redondeado
+    ctx.fillStyle = 'rgba(8,5,3,0.65)'
+    this.roundRect(ctx, 8, 8, 496, 72, 8)
+    ctx.fill()
+
+    // Texto
+    ctx.fillStyle = '#D4A96A'
+    ctx.font      = 'bold 46px Arial'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('ATLAS', 256, 44)
+
+    // Sutil brillo (shadow)
+    ctx.shadowColor   = '#C8956C'
+    ctx.shadowBlur    = 12
+    ctx.fillStyle     = '#F0D0A0'
+    ctx.fillText('ATLAS', 256, 44)
+    tex.update()
+
+    const mat = new StandardMaterial('atlasSignMat', this.scene)
+    mat.diffuseTexture  = tex
+    mat.emissiveColor   = new Color3(0.6, 0.45, 0.22)
+    mat.disableLighting = true
+    mat.backFaceCulling = false
+    plane.material = mat
+  }
+
+  private roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+    ctx.beginPath()
+    ctx.moveTo(x + r, y)
+    ctx.lineTo(x + w - r, y)
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r)
+    ctx.lineTo(x + w, y + h - r)
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
+    ctx.lineTo(x + r, y + h)
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r)
+    ctx.lineTo(x, y + r)
+    ctx.quadraticCurveTo(x, y, x + r, y)
+    ctx.closePath()
+  }
+
+  // ─── VIGAS DE TECHO (NUEVO) ───────────────────────────────────────────────
+
+  private createCeilingBeams() {
+    const beamMat = this.mat('beamMat', 0.28, 0.18, 0.09, 0.05)
+
+    // Vigas transversales (de pared a pared, eje X)
+    const beamPositions = [-4, 0, 4]
+    beamPositions.forEach((bz, i) => {
+      const beam = MeshBuilder.CreateBox(`beam${i}`, {
+        width: this.W - 0.40,
+        height: 0.22,
+        depth: 0.18,
+      }, this.scene)
+      beam.position.set(0, this.H - 0.12, bz)
+      beam.material = beamMat
+    })
+
+    // Viga longitudinal central (eje Z)
+    const ridgeBeam = MeshBuilder.CreateBox('ridgeBeam', {
+      width: 0.18,
+      height: 0.28,
+      depth: this.D - 0.40,
+    }, this.scene)
+    ridgeBeam.position.set(0, this.H - 0.16, 0)
+    ridgeBeam.material = beamMat
   }
 
   // ─── VENTANAS ─────────────────────────────────────────────────────────────

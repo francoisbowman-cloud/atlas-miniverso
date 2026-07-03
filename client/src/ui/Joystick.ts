@@ -134,12 +134,18 @@ export class Joystick {
         display: none;
         position: fixed;
         left: 16px;
-        bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+        bottom: calc(76px + env(safe-area-inset-bottom, 0px));
         z-index: 98;
         pointer-events: none;
       }
       @media (pointer: coarse) {
         #joy-wrap { display: block; }
+      }
+      /* Pantallas muy pequeñas: joystick más compacto */
+      @media (pointer: coarse) and (max-height: 600px) {
+        #joy-wrap { bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
+        #joy-base { width: 72px; height: 72px; }
+        #joy-thumb { width: 28px; height: 28px; }
       }
 
       #joy-base {

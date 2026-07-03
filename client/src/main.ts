@@ -27,21 +27,23 @@ function buildWelcomeScreen(): HTMLDivElement {
   `
   screen.innerHTML = `
     <h1 style="
-      color:#D4A96A; font-size:52px; font-weight:bold;
+      color:#D4A96A; font-size:clamp(32px,10vw,56px); font-weight:bold;
       letter-spacing:.18em; margin:0;
     ">ATLAS</h1>
-    <div style="width:60px; height:1px; background:#C8956C"></div>
+    <div style="width:50px; height:1px; background:#C8956C"></div>
     <p style="
-      color:#C8956C; font-size:15px; margin:0; letter-spacing:.06em;
+      color:#C8956C; font-size:clamp(13px,3.5vw,16px); margin:0; letter-spacing:.06em;
+      text-align:center; padding:0 20px;
     ">Un lugar para encontrarse</p>
     <button id="btn-start" style="
       margin-top:12px; padding:14px 42px;
       background:#C8956C; color:#0A0806;
-      font-size:15px; font-weight:bold;
+      font-size:clamp(14px,4vw,16px); font-weight:bold;
       border:none; border-radius:8px;
       cursor:pointer; letter-spacing:.05em;
       font-family:Arial,sans-serif;
       transition:background .2s;
+      touch-action:manipulation;
     ">Crear mi avatar</button>
   `
   const btn = screen.querySelector<HTMLButtonElement>('#btn-start')!
@@ -91,12 +93,23 @@ async function boot() {
         selection.hair,
         selection.jacket,
         selection.pants,
+        selection.avatarUrl,
       )
 
       // 6. Chat
       const chat = new ChatUI()
       chat.onSend    = (text) => net.sendChat(text)
       chat.onWhisper = (target, text) => net.sendWhisper(target, text)
+
+      // Bloquear zoom de cámara mientras se escribe
+      chat.onFocus = () => {
+        const cam = atlas.camera
+        cam.lowerRadiusLimit = cam.upperRadiusLimit = cam.radius
+      }
+      chat.onBlur = () => {
+        atlas.camera.lowerRadiusLimit = 3
+        atlas.camera.upperRadiusLimit = 8
+      }
 
       net.onChat = (_, name, text, isSelf) => {
         chat.addMessage(name, text, isSelf)
@@ -108,10 +121,13 @@ async function boot() {
         chat.addSystemMessage(`⚠ @${targetName} no está en la sala`)
       }
 
-      // WASD se bloquea si el chat tiene el foco
+      // WASD + wheel bloqueados si el chat tiene el foco
       window.addEventListener('keydown', (e) => {
         if (chat.hasFocus) e.stopImmediatePropagation()
       }, true)
+      window.addEventListener('wheel', (e) => {
+        if (chat.hasFocus) { e.stopPropagation(); e.preventDefault() }
+      }, { capture: true, passive: false })
 
       // 6b. Joystick (móvil)
       const joystick = new Joystick()

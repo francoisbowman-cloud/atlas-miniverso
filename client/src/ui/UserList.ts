@@ -193,7 +193,7 @@ export class UserList {
         position: fixed;
         top: 68px; right: 16px;
         width: min(220px, calc(100vw - 32px));
-        max-height: min(320px, 55vh);
+        max-height: min(320px, 50vh);
         background: rgba(8,6,4,.94);
         border: 1px solid rgba(60,36,12,.55);
         border-radius: 12px;

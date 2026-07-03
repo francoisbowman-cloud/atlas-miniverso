@@ -36,20 +36,17 @@ export class RemotePlayer {
 
   private _obs: Observer<any> | null = null
 
+  // Avatar actual cargado y últimos colores recibidos (para reaplicar tras cargar)
+  private currentUrl = ''
+  private _colors: { skin: RGB; hair: RGB; jacket: RGB; pants: RGB; isDoll: boolean } | null = null
+
   constructor(scene: Scene, id: string) {
     this.scene = scene
     this.root  = new TransformNode(`remote_${id}`, scene)
 
-    // Cargar el mismo GLB del avatar local
-    const glb = new GLBAvatar(scene, this.root)
-    glb.load('/models/avatar.glb').then(ok => {
-      if (ok) {
-        this.glbAvatar = glb
-        glb.playIdle()
-        glb.addCharacterLight()
-      }
-    })
-
+    // El avatar concreto se carga en applyIdentity() cuando llega la identidad
+    // del jugador (que trae su avatarUrl). spawnRemote la llama de inmediato,
+    // así que no hace falta cargar un GLB por defecto aquí.
     this.buildNameplate()
     this.buildSpeechBubble()
 
@@ -66,14 +63,43 @@ export class RemotePlayer {
     this.targetRY = ry
   }
 
-  applyIdentity(name: string, skin: RGB, hair: RGB, jacket: RGB, pants: RGB) {
+  applyIdentity(name: string, skin: RGB, hair: RGB, jacket: RGB, pants: RGB, avatarUrl?: string) {
     this.drawNameplate(name)
-    if (this.glbAvatar) {
-      this.glbAvatar.updateSkin(...skin)
-      this.glbAvatar.updateHair(...hair)
-      this.glbAvatar.updateJacket(...jacket)
-      this.glbAvatar.updatePants(...pants)
+
+    const url = avatarUrl || '/models/avatar.glb'
+    const isDoll = url.includes('avatar_doll')   // solo el muñeco es recolorable
+    this._colors = { skin, hair, jacket, pants, isDoll }
+
+    if (url !== this.currentUrl) {
+      this.currentUrl = url
+      this.loadAvatar(url)      // cambió de avatar → cargar el nuevo
+    } else {
+      this.applyColors()        // mismo avatar → solo actualizar color (si es muñeco)
     }
+  }
+
+  private loadAvatar(url: string) {
+    this.glbAvatar?.dispose()
+    this.glbAvatar = null
+    const glb = new GLBAvatar(this.scene, this.root)
+    glb.load(url).then(ok => {
+      if (!ok) return
+      this.glbAvatar = glb
+      glb.playIdle()
+      glb.addCharacterLight()
+      this.applyColors()
+    })
+  }
+
+  private applyColors() {
+    // Los avatares realistas usan textura horneada: tintarlos se ve mal, así
+    // que solo se aplica color al muñeco estilizado.
+    if (!this.glbAvatar || !this._colors || !this._colors.isDoll) return
+    const { skin, hair, jacket, pants } = this._colors
+    this.glbAvatar.updateSkin(...skin)
+    this.glbAvatar.updateHair(...hair)
+    this.glbAvatar.updateJacket(...jacket)
+    this.glbAvatar.updatePants(...pants)
   }
 
   showSpeechBubble(text: string) {
